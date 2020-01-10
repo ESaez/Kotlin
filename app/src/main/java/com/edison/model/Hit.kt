@@ -1,8 +1,8 @@
 package com.edison.model
 
 class Hit {
-    var createdAt: String? = null
-    var title: Any? = null
+    var created_at: String? = null
+    var title: String? = null
     var url: Any? = null
     var author: String? = null
     var points: Any? = null
@@ -10,12 +10,12 @@ class Hit {
     var commentText: String? = null
     var numComments: Any? = null
     var storyId: Int? = null
-    var storyTitle: String? = null
-    var storyUrl: String? = null
+    var story_title: String? = null
+    var story_url: String? = null
     var parentId: Int? = null
     var createdAtI: Int? = null
     var tags: List<String>? = null
     var objectID: String? = null
-    var highlightResult: HighlightResult? = null
+    var _highlightResult: HighlightResult? = null
 
 }
