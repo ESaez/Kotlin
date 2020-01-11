@@ -1,6 +1,7 @@
 package com.edison.activity
 
 import android.content.Context
+import android.content.Intent
 import android.graphics.*
 import android.net.ConnectivityManager
 import androidx.appcompat.app.AppCompatActivity
@@ -30,7 +31,7 @@ class MainActivity : AppCompatActivity() {
     private var adapter: SwipeAdapter? = null
     private var p = Paint()
     private var dataSetList: List<Hit>? = ArrayList()
-    private var deletedItems: List<String> = ArrayList()
+    private var deletedItems: MutableList<String> = ArrayList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,6 +58,7 @@ class MainActivity : AppCompatActivity() {
 
             retrieveData()
         }
+
     }
 
     fun isOnline(context: Context): Boolean {
@@ -86,6 +88,16 @@ class MainActivity : AppCompatActivity() {
             recyclerView!!.layoutManager =
                 LinearLayoutManager(applicationContext, LinearLayoutManager.VERTICAL, false)
             enableSwipe()
+            adapter?.onItemClick = { model ->
+
+                var url = model.story_url
+
+                val intent = Intent(this, WebviewActivity::class.java)
+                intent.putExtra("url", url)
+                startActivity(intent)
+
+            }
+
             itemsswipetorefresh.isRefreshing = false
         }
     }
@@ -109,7 +121,7 @@ class MainActivity : AppCompatActivity() {
 
                     if (direction == ItemTouchHelper.LEFT) {
                         val deletedModel = dataModelList!![position]
-                        deletedItems.toMutableList().add(title as String)
+                        deletedItems.add(title.toString())
                         adapter!!.removeItem(position)
                         // showing snack bar with Undo option
                         val snackbar = Snackbar.make(
@@ -125,7 +137,7 @@ class MainActivity : AppCompatActivity() {
                         snackbar.show()
                     } else {
                         val deletedModel = dataModelList!![position]
-                        deletedItems.toMutableList().add(title as String)
+                        deletedItems.add(title.toString())
                         adapter!!.removeItem(position)
                         // showing snack bar with Undo option
                         val snackbar = Snackbar.make(
@@ -171,7 +183,7 @@ class MainActivity : AppCompatActivity() {
                             c.drawRect(background, p)
                             icon = BitmapFactory.decodeResource(
                                 resources,
-                                android.R.drawable.ic_delete
+                                R.drawable.ic_delete
                             )
                             val icon_dest = RectF(
                                 itemView.left.toFloat() + width,
@@ -191,7 +203,7 @@ class MainActivity : AppCompatActivity() {
                             c.drawRect(background, p)
                             icon = BitmapFactory.decodeResource(
                                 resources,
-                                android.R.drawable.ic_delete
+                                R.drawable.ic_delete
                             )
                             val icon_dest = RectF(
                                 itemView.right.toFloat() - 2 * width,
@@ -234,6 +246,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 imageModel.author = it.author
                 imageModel.createdAt = it.created_at
+                imageModel.story_url = it.story_url
                 list.add(imageModel)
             }
         }
