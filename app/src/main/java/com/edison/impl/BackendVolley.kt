@@ -5,11 +5,13 @@ import android.text.TextUtils
 import com.android.volley.Request
 import com.android.volley.RequestQueue
 import com.android.volley.toolbox.Volley
+import io.realm.Realm
 
 class BackendVolley : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        Realm.init(this)
     }
 
     val requestQueue: RequestQueue? = null

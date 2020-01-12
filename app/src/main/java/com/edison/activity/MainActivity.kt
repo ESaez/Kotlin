@@ -4,9 +4,10 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.*
 import android.net.ConnectivityManager
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.text.format.DateUtils
 import android.util.Log
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -20,9 +21,12 @@ import com.edison.model.Hit
 import com.edison.model.ModelCard
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
+import com.vicpin.krealmextensions.save
 import kotlinx.android.synthetic.main.activity_main.*
 import org.json.JSONObject
-import java.util.ArrayList
+import java.text.SimpleDateFormat
+import java.util.*
+import kotlin.collections.ArrayList
 
 class MainActivity : AppCompatActivity() {
 
@@ -51,12 +55,15 @@ class MainActivity : AppCompatActivity() {
             itemsswipetorefresh.setOnRefreshListener {
 
                 dataSetList = null
+                ModelCard().deleteAll()
                 retrieveData()
                 recyclerView?.invalidate()
 
             }
 
             retrieveData()
+        } else {
+            retreieveDatafromRealm()
         }
 
     }
@@ -66,6 +73,25 @@ class MainActivity : AppCompatActivity() {
             context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val networkInfo = connectivityManager.activeNetworkInfo
         return networkInfo != null && networkInfo.isConnected
+    }
+
+    fun retreieveDatafromRealm() {
+        dataModelList = ArrayList(ModelCard().getAll())
+        adapter = SwipeAdapter(this, dataModelList!!)
+        recyclerView!!.adapter = adapter
+        recyclerView!!.layoutManager =
+            LinearLayoutManager(applicationContext, LinearLayoutManager.VERTICAL, false)
+        enableSwipe()
+        adapter?.onItemClick = { model ->
+
+            var url = model.story_url
+
+            val intent = Intent(this, WebviewActivity::class.java)
+            intent.putExtra("url", url)
+            startActivity(intent)
+
+        }
+
     }
 
 
@@ -79,6 +105,7 @@ class MainActivity : AppCompatActivity() {
 
         apiController.get(path, params) { response ->
             Log.d("val", response.toString())
+//            ModelCard().deleteAll()
             var pased = Gson().fromJson(response.toString(), Data::class.java)
             dataSetList = pased.hits
 
@@ -123,14 +150,14 @@ class MainActivity : AppCompatActivity() {
                         val deletedModel = dataModelList!![position]
                         deletedItems.add(title.toString())
                         adapter!!.removeItem(position)
-                        // showing snack bar with Undo option
+                        ModelCard().deleteWhere(title.toString())
+
                         val snackbar = Snackbar.make(
                             window.decorView.rootView,
                             " eliminado de Recyclerview!",
                             Snackbar.LENGTH_LONG
                         )
                         snackbar.setAction("Deshacer") {
-                            // undo is selected, restore the deleted item
                             adapter!!.restoreItem(deletedModel, position)
                         }
                         snackbar.setActionTextColor(Color.YELLOW)
@@ -138,15 +165,14 @@ class MainActivity : AppCompatActivity() {
                     } else {
                         val deletedModel = dataModelList!![position]
                         deletedItems.add(title.toString())
+                        ModelCard().deleteWhere(title.toString())
                         adapter!!.removeItem(position)
-                        // showing snack bar with Undo option
                         val snackbar = Snackbar.make(
                             window.decorView.rootView,
                             " eliminado de Recyclerview!",
                             Snackbar.LENGTH_LONG
                         )
                         snackbar.setAction("Deshacer") {
-                            // undo is selected, restore the deleted item
                             adapter!!.restoreItem(deletedModel, position)
                         }
                         snackbar.setActionTextColor(Color.YELLOW)
@@ -239,20 +265,42 @@ class MainActivity : AppCompatActivity() {
                 val imageModel = ModelCard()
                 if (it.story_title == null) {
                     imageModel.title = it._highlightResult?.title?.value
-                } else if(it.story_title == null) {
+                } else if (it.story_title == null) {
                     imageModel.title = it.story_title
-                }else{
+                } else {
                     imageModel.title = it._highlightResult?.story_title?.value
                 }
                 imageModel.author = it.author
-                imageModel.createdAt = it.created_at
+                imageModel.createdAt = toLocalTime(it.created_at!!)
                 imageModel.story_url = it.story_url
+                imageModel.additem(imageModel)
+
                 list.add(imageModel)
             }
         }
 
         return list
     }
+
+    fun toLocalTime(date: String): String {
+
+        var utc: TimeZone = TimeZone.getTimeZone("UTC")
+        var sourceFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
+        var destFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+        sourceFormat.timeZone = utc
+        var convertedDate: Date = sourceFormat.parse(date)
+        var dayName = ""
+
+        if (DateUtils.isToday(convertedDate.time)) {
+            dayName = "Today"
+        } else {
+            var sdf_ = SimpleDateFormat("EEEE")
+            dayName = sdf_.format(convertedDate)
+        }
+
+        return dayName + " " + destFormat.format(convertedDate)
+    }
+
 
     fun checkDeletedItems(value: String?): Boolean {
 
